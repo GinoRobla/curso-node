@@ -2,6 +2,8 @@ const bcrypt = require("bcrypt");
 const User = require("../models/user");
 const jwt = require("../services/jwt");
 const mongoosePaginate = require("mongoose-pagination");
+const fs = require("fs");
+const path = require("path");
 
 const register = async (req, res) => {
     const params = req.body;
@@ -172,7 +174,7 @@ const list = async (req, res) => {
 }
 
 const update = async (req, res) => {
-    const userId = req.user.id;  // ID del usuario autenticado
+    const userId = req.user.id; 
     const params = req.body;
 
     try {
@@ -218,11 +220,79 @@ const update = async (req, res) => {
     }
 };
 
+const upload = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                status: "error",
+                message: "No se ha subido ninguna imagen"
+            });
+        }
+
+        let image = req.file.originalname;
+        const imageSplit = image.split(".");
+        const extension = imageSplit[1].toLowerCase();
+
+        // Validar extensión
+        if (!["png", "jpg", "jpeg", "gif"].includes(extension)) {
+            fs.unlinkSync(req.file.path); // Eliminar si no es válida
+
+            return res.status(400).json({
+                status: "error",
+                message: "Extensión de imagen no válida. Solo se permiten PNG, JPG, JPEG y GIF."
+            });
+        }
+
+        // Actualizar usuario con la nueva imagen
+        const userUpdated = await User.findByIdAndUpdate(
+            req.user.id,
+            { image: req.file.filename },
+            { new: true }
+        );
+
+        if (!userUpdated) {
+            return res.status(404).json({
+                status: "error",
+                message: "Usuario no encontrado"
+            });
+        }
+
+        return res.status(200).json({
+            status: "success",
+            user: userUpdated,
+            file: req.file
+        });
+
+    } catch (error) {
+        console.error("Error:", error);
+        return res.status(500).json({
+            status: "error",
+            message: "Error al subir la imagen"
+        });
+    }
+};
+
+const getAvatar = (req, res) => {
+    const file = req.params.file;
+    const filePath = "./uploads/avatars/"+ file;
+
+    fs.stat(filePath, (error, exist) => {
+        if (!exist) {
+            return res.status(404).json({
+                status: "error",
+                message: "La imagen no existe"
+            });
+        }
+        return res.sendFile(path.resolve(filePath));
+    });
+};
 
 module.exports = {
     register,
     login,
     getProfile,
     list,
-    update
+    update,
+    upload,
+    getAvatar
 };
