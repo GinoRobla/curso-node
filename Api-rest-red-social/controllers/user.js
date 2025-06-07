@@ -1,7 +1,6 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
 const jwt = require("../services/jwt");
-const mongoosePaginate = require("mongoose-pagination");
 const fs = require("fs");
 const path = require("path");
 
@@ -33,11 +32,13 @@ const register = async (req, res) => {
 
             // Guardar usuario en la base de datos
             const savedUser = await userToSave.save();
-            
+            // Eliminar la contraseña del objeto de respuesta
+            const userResponse = savedUser.toObject();
+            delete userResponse.password;
             return res.status(200).json({
                 status: "success",
                 message: "Usuario creado correctamente",
-                user: savedUser
+                user: userResponse
             });
 
         } catch (error) {
@@ -140,38 +141,31 @@ const getProfile = async (req, res) => {
 }
 
 const list = async (req, res) => {
-    let page = 1;
-    if (req.params.page) {
-        page = req.params.page;
-    }
-    page = parseInt(page);
-
+    let page = parseInt(req.params.page) || 1;
     const itemsPerPage = 5;
+
     try {
-        const users = await User.find().paginate(page, itemsPerPage);
-        if (!users) {
-            return res.status(404).json({
-                status: "error",
-                message: "No hay usuarios"
-            });
-        }
+        const users = await User.find()
+            .skip((page - 1) * itemsPerPage)
+            .limit(itemsPerPage);
+
+        const total = await User.countDocuments();
 
         return res.status(200).json({
             status: "success",
             users,
             page,
             itemsPerPage,
-            total: users.length,
-            pages: Math.ceil(users.length / itemsPerPage)
+            total,
+            pages: Math.ceil(total / itemsPerPage)
         });
-
     } catch (error) {
         return res.status(500).json({
             status: "error",
             message: "Error al listar los usuarios"
         });
     }
-}
+};
 
 const update = async (req, res) => {
     const userId = req.user.id; 
@@ -183,7 +177,8 @@ const update = async (req, res) => {
             $or: [
                 { email: params.email?.toLowerCase() },
                 { nick: params.nick?.toLowerCase() }
-            ]
+            ],
+            _id: { $ne: userId } // Excluir el usuario actual
         });
 
         if (existingUser) {
@@ -204,6 +199,13 @@ const update = async (req, res) => {
             params,
             { new: true } // Para devolver el usuario actualizado
         );
+
+        if (!updatedUser) {
+            return res.status(404).json({
+            status: "error",
+            message: "Usuario no encontrado"
+        });
+}
 
         return res.status(200).json({
             status: "success",
@@ -231,7 +233,7 @@ const upload = async (req, res) => {
 
         let image = req.file.originalname;
         const imageSplit = image.split(".");
-        const extension = imageSplit[1].toLowerCase();
+        const extension = imageSplit[imageSplit.length - 1].toLowerCase();
 
         // Validar extensión
         if (!["png", "jpg", "jpeg", "gif"].includes(extension)) {
@@ -276,14 +278,14 @@ const getAvatar = (req, res) => {
     const file = req.params.file;
     const filePath = "./uploads/avatars/"+ file;
 
-    fs.stat(filePath, (error, exist) => {
-        if (!exist) {
-            return res.status(404).json({
-                status: "error",
-                message: "La imagen no existe"
-            });
-        }
-        return res.sendFile(path.resolve(filePath));
+    fs.stat(filePath, (error, stats) => {
+    if (error) {
+        return res.status(404).json({
+            status: "error",
+            message: "La imagen no existe"
+        });
+    }
+    return res.sendFile(path.resolve(filePath));
     });
 };
 
