@@ -9,7 +9,7 @@ const secret = libjwt.secret;
 const auth = (req, res, next) => {
     // Comprobar si existe la cabecera de autenticación
     if (!req.headers.authorization) {
-        return res.status(404).json({
+        return res.status(403).json({
             status: "error",
             message: "La petición no tiene la cabecera de autenticación"
         });
@@ -24,7 +24,7 @@ const auth = (req, res, next) => {
 
         // Comprobar si el token ha expirado
         if (payload.exp <= moment().unix()) {
-            return res.status(404).json({
+            return res.status(401).json({
                 status: "error",
                 message: "El token ha expirado"
             });

@@ -289,6 +289,41 @@ const getAvatar = (req, res) => {
     });
 };
 
+const counters = async (req, res) => {
+    const userId = req.params.id;
+
+    try {
+        // Importar modelos solo cuando sea necesario
+        const Follow = require("../models/follow");
+        const Publication = require("../models/publication");
+
+        // Contar seguidores
+        const following = await Follow.countDocuments({ user: userId });
+
+        // Contar seguidos
+        const followed = await Follow.countDocuments({ followed: userId });
+
+        // Contar publicaciones
+        const publications = await Publication.countDocuments({ user: userId });
+
+        return res.status(200).json({
+            status: "success",
+            userId,
+            counters: {
+                following,
+                followed,
+                publications
+            }
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            status: "error",
+            message: "Error en los contadores"
+        });
+    }
+}
+
 module.exports = {
     register,
     login,
@@ -296,5 +331,6 @@ module.exports = {
     list,
     update,
     upload,
-    getAvatar
+    getAvatar,
+    counters
 };

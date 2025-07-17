@@ -24,5 +24,6 @@ router.get('/list/:page', auth, UserController.list);
 router.put('/update/:id', auth, UserController.update);
 router.post('/upload/:id', auth, upload.single('file0'), UserController.upload);
 router.get('/getAvatar/:file', auth, UserController.getAvatar);
+router.get('/counters/:id', auth, UserController.counters);
 
 module.exports = router;

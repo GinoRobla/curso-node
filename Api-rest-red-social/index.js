@@ -2,6 +2,7 @@
 const connection = require("./database/connection");
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 
 //mensaje de bienvenida
 console.log("API Node para red social arrancada!");
@@ -19,6 +20,9 @@ app.use(cors());
 //convertir body a json
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Configurar carpeta uploads como pública para acceder a las imágenes directamente
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 //configurar rutas
 const UserRoutes = require("./routes/user");
