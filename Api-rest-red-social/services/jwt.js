@@ -3,7 +3,7 @@ const jwt = require("jwt-simple");
 const moment = require("moment");
 
 //clave secreta
-const secret = "CLAVE_SECRETA";
+const secret = process.env.JWT_SECRET || "CLAVE_SECRETA_DEFAULT_PARA_DESARROLLO";
 
 //generar token
 const createToken = (user) => {

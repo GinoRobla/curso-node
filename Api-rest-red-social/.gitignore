@@ -1,1 +1,13 @@
 node_modules
+
+# Variables de entorno
+.env
+
+# Logs
+*.log
+
+# Carpetas de uploads con contenido sensible
+uploads/avatars/*
+!uploads/avatars/.gitkeep
+uploads/publications/*
+!uploads/publications/.gitkeep
