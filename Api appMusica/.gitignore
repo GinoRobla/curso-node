@@ -1,0 +1,16 @@
+# Node modules
+node_modules/
+
+# Entorno
+.env
+.env.local
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de logs
+*.log
+
+# Carpeta de uploads (opcional, si no quieres subir archivos subidos)
+uploads/

@@ -1,0 +1,284 @@
+// Prueba
+const prueba = (req, res) => {
+    return res.status(200).send({
+        status: "success",
+        message: "Prueba de controlador de álbum"
+    });
+}
+const Album = require('../models/album'); // Importar el modelo de Album
+const Song = require('../models/song'); // Importar el modelo de Song
+const fs = require('fs'); // Importar el módulo fs para manejar archivos
+const path = require('path'); // Importar el módulo path para manejar rutas de archivos
+const mongoosePagination = require('mongoose-pagination'); // Importar el módulo de paginación de mongoose
+
+const save = async (req, res) => {
+    // Recoger los datos del body
+    let params = req.body;
+
+    // Validar los datos
+    try {
+        if (!params.title || !params.year || !params.artist) {
+            return res.status(400).send({
+                status: 'error',
+                message: 'Faltan datos por enviar'
+            });
+        }
+    } catch (error) {
+        return res.status(500).send({
+            status: 'error',
+            message: 'Error al guardar el album',
+            error: error.message
+        });
+    }
+
+    // Crear el objeto a guardar
+    const albumToSave = new Album(params);
+
+    // Guardar el album en la base de datos
+    try {
+        const albumStored = await albumToSave.save();
+        return res.status(200).send({
+            status: 'success',
+            album: albumStored
+        });
+    } catch (error) {
+        return res.status(500).send({
+            status: 'error',
+            message: 'Error al guardar el album',
+            error: error.message
+        });
+    }
+}
+
+const one = async (req, res) => {
+    // Recoger el id de la url
+    let albumId = req.params.id;
+
+    // Comprobar si existe el album
+    try {
+        const album = await Album.findById(albumId).populate('artist', 'name');
+        if (!album) {
+            return res.status(404).send({
+                status: 'error',
+                message: 'El album no existe'
+            });
+        }
+        return res.status(200).send({
+            status: 'success',
+            album
+        });
+    } catch (error) {
+        return res.status(500).send({
+            status: 'error',
+            message: 'Error al buscar el album'
+        });
+    }
+}
+
+const list = async (req, res) => {
+    // Recoger el id de la url
+    let artistId = req.params.artistId;
+
+    // Comprobar si existe el album
+    try {
+        const albums = await Album.find({ artist: artistId })
+            .populate('artist', 'name')
+            .sort('-year').exec();
+        if (!albums) {
+            return res.status(404).send({
+                status: 'error',
+                message: 'No hay albums'
+            });
+        }
+        return res.status(200).send({
+            status: 'success',
+            albums
+        });
+    } catch (error) {
+        return res.status(500).send({
+            status: 'error',
+            message: 'Error al buscar los albums'
+        });
+    }
+}
+
+const update = async (req, res) => {
+    // Recoger el id de la url
+    let albumId = req.params.id;
+
+    // Recoger los datos del body
+    let params = req.body;
+
+    // Validar solo los campos enviados
+    try {
+        if (params.name && params.name.trim() === "") {
+            return res.status(400).send({
+                status: 'error',
+                message: 'El nombre no puede estar vacío'
+            });
+        }
+        if (params.description && params.description.trim() === "") {
+            return res.status(400).send({
+                status: 'error',
+                message: 'La descripción no puede estar vacía'
+            });
+        }
+        if (params.image && params.image.trim() === "") {
+            return res.status(400).send({
+                status: 'error',
+                message: 'La imagen no puede estar vacía'
+            });
+        }
+    } catch (error) {
+        return res.status(500).send({
+            status: 'error',
+            message: 'Error al validar los datos'
+        });
+    }
+
+    // Actualizar el album en la base de datos
+    try {
+        const albumUpdated = await Album.findByIdAndUpdate(albumId, params, { new: true });
+        if (!albumUpdated) {
+            return res.status(404).send({
+                status: 'error',
+                message: 'No se ha podido actualizar el album'
+            });
+        }
+        return res.status(200).send({
+            status: 'success',
+            album: albumUpdated
+        });
+    } catch (error) {
+        return res.status(500).send({
+            status: 'error',
+            message: 'Error al actualizar el album'
+        });
+    }
+}
+
+const upload = async (req, res) => {
+
+    if (!req.file) {
+        return res.status(400).send({
+            status: "error",
+            message: "No se han subido archivos",
+        });
+    }
+
+    let image = req.file.originalname;
+
+    const imageSplit = image.split("\.");
+    const extension = imageSplit[1];
+
+    // Comprobar la extensión
+    const valid_extensions = ["png", "jpg", "jpeg", "gif"];
+    if (!valid_extensions.includes(extension)) {
+        const filePath = req.file.path;
+        const fileDeleted = fs.unlinkSync(filePath);
+
+        return res.status(400).send({
+            status: "error",
+            message: "La extensión no es válida",
+        });
+    }
+
+    //Si es correcta, guardar imagen en la base de datos
+    try {
+        const albumId = req.params.id;
+        const albumUpdated = await Album.findByIdAndUpdate(
+            { _id: albumId },
+            { image: req.file.filename },
+            { new: true }
+        );
+
+        if (!albumUpdated) {
+            // Eliminar archivo si no se pudo guardar en la base de datos
+            const filePath = req.file.path;
+            fs.unlinkSync(filePath);
+            return res.status(500).send({
+                status: "error",
+                message: "Error al guardar la imagen del álbum",
+            });
+        }
+
+        return res.status(200).send({
+            status: "success",
+            album: albumUpdated,
+            file: req.file,
+        });
+    } catch (err) {
+        // Eliminar archivo si ocurre cualquier error
+        const filePath = req.file.path;
+        fs.unlinkSync(filePath);
+        return res.status(500).send({
+            status: "error",
+            message: "Error al guardar la imagen del álbum",
+            error: err,
+        });
+    }
+}
+
+
+const image = async (req, res) => {
+    // Recoger el parámetro de la url
+    const file = req.params.file;
+
+    // Comprobar si existe el fichero
+    const filePath = "./uploads/albums/" + file;
+    fs.stat(filePath, (err, exists) => {
+        if (err || !exists) {
+            return res.status(404).send({
+                status: "error",
+                message: "No existe la imagen",
+            });
+        }
+
+        // Devolver el archivo
+        return res.sendFile(path.resolve(filePath));
+    });
+}
+
+const remove = async (req, res) => {
+    // Recoger el id de la url
+    let albumId = req.params.id;
+
+    // Comprobar si existe el album
+    try {
+        const album = await Album.findById(albumId);
+        if (!album) {
+            return res.status(404).send({
+                status: 'error',
+                message: 'El album no existe'
+            });
+        }
+
+        // Eliminar el album de la base de datos
+    await Album.findByIdAndDelete(albumId);
+        // Eliminar las canciones del album
+        await Song.deleteMany({ album: albumId });
+
+        return res.status(200).send({
+            status: 'success',
+            message: 'Album eliminado correctamente'
+        });
+    } catch (error) {
+        console.error('Error al eliminar el album:', error);
+        return res.status(500).send({
+            status: 'error',
+            message: 'Error al eliminar el album',
+            error: error.message
+        });
+    }
+}
+
+module.exports = {
+    prueba,
+    save,
+    one,
+    list,
+    update,
+    upload,
+    image,
+    remove
+}
