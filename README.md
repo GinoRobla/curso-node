@@ -14,10 +14,6 @@
   - Express.js
   - MongoDB
   - Mongoose
-- **Características**:
-  - CRUD de publicaciones
-  - Validación de datos
-  - Manejo de errores
 
 ### 2. API REST para Red Social
 
@@ -27,11 +23,6 @@
   - Express.js
   - MongoDB
   - Mongoose
-- **Características**:
-  - Registro y autenticación de usuarios
-  - CRUD de publicaciones
-  - Relaciones entre usuarios (seguidores/seguidos)
-  - Middleware de autenticación
 
 ### 3. API REST para Aplicación de Música (Tipo Spotify)
 
@@ -41,7 +32,3 @@
   - Express.js
   - MongoDB
   - Mongoose
-- **Características**:
-  - CRUD de artistas, álbumes y canciones
-  - Subida y gestión de archivos multimedia
-  - Búsqueda y filtrado de contenido
