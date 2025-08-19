@@ -24,7 +24,7 @@
   - MongoDB
   - Mongoose
 
-### 3. API REST para Aplicación de Música (Tipo Spotify)
+### 3. API REST para Aplicación de Música
 
 - **Descripción**: API que permite la gestión de artistas, álbumes y canciones, simulando una aplicación de música.
 - **Tecnologías utilizadas**:
