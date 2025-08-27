@@ -1,5 +1,4 @@
 // Importar modelo
-const follow = require("../models/follow");
 const Follow = require("../models/follow");
 const User = require("../models/user");
 
